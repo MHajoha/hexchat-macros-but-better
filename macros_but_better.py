@@ -151,13 +151,11 @@ def help_(word, word_eol):
     print(postfix("Available commands are: ", commands))
 
 
-@require_args(1)
-@say
+@fact
 def start(word, word_eol):
-    return "Hi there " + ", ".join(word[1:]) + ". Just to confirm, do you see a blue emergency oxygen depletion timer counting down near the upper right corner of your screen?"
+    return "Hi there! Just to confirm, do you see a blue emergency oxygen depletion timer counting down near the upper right corner of your screen?"
 
 
-@require_args(1)
 @fact
 def startcr(word, word_eol):
     return "If you haven't already, please exit to the main menu. There may be a timer which you have to wait for, this is normal."
@@ -204,10 +202,9 @@ def long_trip(word, word_eol):
     return "Since your rat(s) are still a ways out, please log out to the main menu for now. I will ask you to log back in when they are closer."
 
 
-@require_args(1)
-@say
+@fact
 def need_fuel(word, word_eol):
-    return "Hi there " + ", ".join(word[1:]) + ". Do you require fuel?"
+    return "Hi there! Do you require fuel?"
 
 
 @fact
