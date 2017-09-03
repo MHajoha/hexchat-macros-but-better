@@ -18,11 +18,13 @@ from functools import wraps
 import hexchat
 
 __module_name__ = "Macros but better"
-__module_version__ = "1.7-beta"
+__module_version__ = "2.0-beta"
 __module_description__ = "Adds customizable commands for use when dispatching"
 
-DEFAULT_CHAR = "§"
-""" :var: "cmd_char" used to create a config file if none exists. """
+DEFAULT_CONFIG = {
+    "cmd_char": "§",
+    "prefix_char": ": "
+}
 
 config_path = ""
 """ :var: Path to the config file. Set in init. """
@@ -66,12 +68,12 @@ def write_config(path: str=None, data: dict=None):
 
     with open(path, "w" if os.path.isfile(path) else "x") as f:
         for key, value in data.items():
-            f.write(key + " = " + value)
+            f.write(key + " = " + value + "\n")
 
 
 def prefix(text: str, l):
     """ Prefixes *text* with *l*, comma-separated. """
-    return text if len(l) == 0 else ", ".join(l) + ", " + text
+    return text if len(l) == 0 else ", ".join(l) + config["prefix_char"] + text
 
 
 def postfix(text: str, l):
@@ -79,49 +81,35 @@ def postfix(text: str, l):
     return text if len(l) == 0 else text + ", ".join(l)
 
 
+def say(it: str or GeneratorType or list):
+    """ Says *it* or each `str` in it in the current IRC context """
+    if type(it) is str:
+        hexchat.command("say " + it)
+    else:
+        for item in it:
+            say(item)
+
+
+def say_fact(text: str, args: list):
+    """
+    If any *args* are given, prefix *text* with them and `say` the result.
+    Otherwise, just `say` *text*.
+    :param text: Fact text, should start with an uppercase letter.
+    :param args: Arguments to the fact, i.e. intended recipients. Should be word[1:].
+    """
+    if len(args) > 0:
+        temp = text[0].lower() + text[1:]
+    else:
+        temp = text
+
+    say(prefix(temp, args))
+
 # Decorators
-
-def say(fun: FunctionType):
-    """ Says the return of the decorated function in the current context. """
-    @wraps(fun)
-    def new_fun(word, word_eol):
-        temp = fun(word, word_eol)
-
-        if type(temp) is str:
-            hexchat.command("say " + temp)
-        elif type(temp) is GeneratorType:
-            for string in temp:
-                hexchat.command("say " + string)
-
-    return new_fun
-
-
-def fact(fun: FunctionType):
-    """
-    Says the return of the decorated function prefixed with all given arguments in the current context.
-    Also decapitalizes the first letter if there are arguments.
-    Commands using this decorator should therefore start with an upper case letter.
-    """
-    @wraps(fun)
-    def new_fun(word, word_eol):
-        if len(word[1:]) > 0:
-            temp = fun(word, word_eol)
-            temp = temp[0].lower() + temp[1:]
-        else:
-            temp = fun(word, word_eol)
-
-        if type(temp) is str:
-            hexchat.command("say " + prefix(temp, word[1:]))
-        elif type(temp) is GeneratorType:
-            for string in temp:
-                hexchat.command("say " + prefix(string, word[1:]))
-
-    return new_fun
 
 
 def require_args(num: int, exact: bool=False):
     """
-    Stops command execution when the number of arguments given is less than or anything other than num.
+    Stops command execution if the number of arguments given is less than or anything other than num.
     :param num: Required number of arguments
     :param exact: If True, requires num to match the number of arguments exactly. If False, num is the minimum amount of arguments required
     """
@@ -142,93 +130,41 @@ def require_args(num: int, exact: bool=False):
 @require_args(2)
 def set_(word, word_eol):
     """ Changes a certain property in `config` or creates it if it does not exist. Writes changes immediately. """
-    config[word[1].lower()] = word_eol[2]
+    key = word[1].lower()
+    value = word_eol[2]
+    config[key] = value
     write_config(config_path, config)
+    print("Config item %s set to \"%s\"" % (key, value))
 
 
 def help_(word, word_eol):
     """ Prints out all available `commands`. """
     print(postfix("Available commands are: ", commands))
-
-
-@fact
-def start(word, word_eol):
-    return "Hi there! Just to confirm, do you see a blue emergency oxygen depletion timer counting down near the upper right corner of your screen?"
-
-
-@fact
-def startcr(word, word_eol):
-    return "If you haven't already, please exit to the main menu. There may be a timer which you have to wait for, this is normal."
-
-
-@require_args(2)
-@say
-def add_rats(word, word_eol):
-    return "{0}, your rat(s) are: {1}. Please add them to your friends list.".format(word[1], ", ".join(word[2:]))
-
-
-@fact
-def wing(word, word_eol):
-    return "Thank you. Next please invite your rat(s) to a wing."
-
-
-@fact
-def beacon(word, word_eol):
-    return "Thanks. Now please light your wing beacon so that our rats can find you."
-
-
-@fact
-def tips(word, word_eol):
-    return "Glad we could help you today. You can power your modules back up now. If you'll just stick with your rats ingame for a bit, they have some advice which might interest you."
-
-
-@fact
-def tips_db(word, word_eol):
-    return "Glad we could help you today. You can power your modules back up now. If you could type \"/join #debrief\", someone will give you some tips in there which may interest you."
-
-
-@fact
-def db_channel(word, word_eol):
-    return "Please type \"/join #debrief\". Someone will give you tips on fuel management there."
-
-
-@fact
-def enroute(word, word_eol):
-    return "Thank you, your rats are making their way to you now. Sit back, relax and tell me immediately if that timer should show up."
-
-
-@fact
-def long_trip(word, word_eol):
-    return "Since your rat(s) are still a ways out, please log out to the main menu for now. I will ask you to log back in when they are closer."
-
-
-@fact
-def need_fuel(word, word_eol):
-    return "Hi there! Do you require fuel?"
-
-
-@fact
-def join(word, word_eol):
-    return "If you'd like to look into joining the FuelRats, type \"/join #ratchat\". We'll get you started there."
+    print(postfix("Available facts are: ", facts))
 
 
 commands = {
     "set": set_,
-    "help": help_,
-    "start": start,
-    "startcr": startcr,
-    "add-rats": add_rats,
-    "wing": wing,
-    "beacon": beacon,
-    "tips": tips,
-    "tips-db": tips_db,
-    "db-channel": db_channel,
-    "enroute": enroute,
-    "long": long_trip,
-    "need-fuel": need_fuel,
-    "join": join
+    "help": help_
 }
-""" :var Assigns to each command their function. """
+""" :var: Assigns to each command their function. """
+
+facts = {
+    "start": "Hi there! Just to confirm, do you see a blue emergency oxygen depletion timer counting down near the upper right corner of your screen?",
+    "startcr": "If you haven't already, please exit to the main menu. There may be a timer which you have to wait for, this is normal.",
+    "wing": "Thank you. Next please invite your rat(s) to a wing.",
+    "beacon": "Thanks. Now please light your wing beacon so that our rats can find you.",
+    "tips": "Glad we could help you today. You can power your modules back up now. If you'll just stick with your rats in game for a bit, they have some advice which might interest you.",
+    "tips-db": "Glad we could help you today. You can power your modules back up now. If you could type \"/join #debrief\", someone will give you some tips in there which may interest you.",
+    "db-channel": "Please type \"/join #debrief\". Someone will give you tips on fuel management there.",
+    "enroute": "Thank you, your rats are making their way to you now. Sit back, relax and tell me immediately if that timer should show up.",
+    "long": "Since your rat(s) are still a ways out, please log out to the main menu for now. I will ask you to log back in when they are closer.",
+    "need-fuel": "Hi there! Do you require fuel?",
+    "join": "If you'd like to look into joining the FuelRats, type \"/join #ratchat\". We'll get you started there.",
+    "shrug": "¯\_(ツ)_/¯",
+    "lenny": "( ͡° ͜ʖ ͡° )"
+}
+""" :var: Like Mecha facts. See `say_fact` docstring """
 
 
 # Initialization
@@ -236,7 +172,8 @@ commands = {
 def init():
     """
     Run a single time upon plugin load.
-    Sets `config_path` depending on the OS and reads `config` or creates a new one if necessary.
+    Sets `config_path` depending on the OS and reads into `config` or creates a new one if necessary.
+    Also adds any missing config items from `DEFAULT_CONFIG`.
     """
     global config_path
     global config
@@ -251,14 +188,19 @@ def init():
 
     if os.path.isfile(config_path):
         config = parse_config()
+        # Add missing config items
+        for key, value in DEFAULT_CONFIG.items():
+            if key not in config.keys():
+                config[key] = DEFAULT_CONFIG[key]
+
         print(__module_name__ + ": Config file loaded from " + config_path)
     else:
-        config = {
-            "cmd_char": DEFAULT_CHAR
-        }
+        config = DEFAULT_CONFIG
         write_config()
-        print("\002{0}\002\nThis seems to be your first time loading this plugin.\nBy default commands begin with {1}."
-              " Type {1}set cmd_char <new character> to change this.".format(__module_name__, DEFAULT_CHAR))
+        print("\n\002{0}\002\nThis seems to be your first time loading this plugin.\n"
+              "By default commands begin with {1}. Type {1}set cmd_char <new character> to change this.\n"
+              "Type {1}help for a list of all commands and facts.\n"
+              .format(__module_name__, config["cmd_char"]))
 
 
 # Hook functions
@@ -266,7 +208,7 @@ def init():
 def on_send(word, word_eol, userdata):
     """
     Hook function, called upon all commands / messages the user sends.
-    If the message is a script command, parses it and calls the corresponding function.
+    If the message is a script command or fact, parse it and call the corresponding function.
 
     Official HexChat Python interface documentation: http://hexchat.readthedocs.io/en/latest/script_python.html
     """
@@ -276,6 +218,8 @@ def on_send(word, word_eol, userdata):
 
         if word[0] in commands.keys():
             commands[word[0]](word, word_eol)
+        elif word[0] in facts.keys():
+            say_fact(facts[word[0]], word[1:])
         else:
             print("Command " + word[0] + " not available, " + config["cmd_char"] + "help for a list of all commands.")
 
