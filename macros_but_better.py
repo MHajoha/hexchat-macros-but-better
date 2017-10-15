@@ -23,7 +23,7 @@ __module_description__ = "Adds customizable commands for use when dispatching"
 
 DEFAULT_CONFIG = {
     "cmd_char": "§",
-    "prefix_char": ": "
+    "prefix_char": ":"
 }
 
 config_path = ""
@@ -73,7 +73,7 @@ def write_config(path: str=None, data: dict=None):
 
 def prefix(text: str, l):
     """ Prefixes *text* with *l*, comma-separated. """
-    return text if len(l) == 0 else ", ".join(l) + config["prefix_char"] + text
+    return text if len(l) == 0 else "{0}{1} {2}".format(", ".join(l), config["prefix_char"], text)
 
 
 def postfix(text: str, l):
