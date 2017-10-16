@@ -18,7 +18,7 @@ from functools import wraps
 import hexchat
 
 __module_name__ = "Macros but better"
-__module_version__ = "2.0-beta"
+__module_version__ = "2.1"
 __module_description__ = "Adds customizable commands for use when dispatching"
 
 DEFAULT_CONFIG = {
@@ -27,10 +27,10 @@ DEFAULT_CONFIG = {
 }
 
 config_path = ""
-""" :var: Path to the config file. Set in init. """
+""":var: Path to the config file. Set in init."""
 
 config = dict()
-""" :var: Parsed contents of the config file. Set in init. Please keep new config keys in lower case. """
+""":var: Parsed contents of the config file. Set in init. Please keep new config keys in lower case."""
 
 
 # Helper functions
@@ -72,21 +72,21 @@ def write_config(path: str=None, data: dict=None):
 
 
 def prefix(text: str, l):
-    """ Prefixes *text* with *l*, comma-separated. """
+    """Prefixes *text* with *l*, comma-separated."""
     return text if len(l) == 0 else "{0}{1} {2}".format(", ".join(l), config["prefix_char"], text)
 
 
 def postfix(text: str, l):
-    """ Postfixes *text* with *l*, comma-separated. """
+    """Postfixes *text* with *l*, comma-separated."""
     return text if len(l) == 0 else text + ", ".join(l)
 
 
-def say(it: str or GeneratorType or list):
-    """ Says *it* or each `str` in it in the current IRC context """
-    if type(it) is str:
-        hexchat.command("say " + it)
+def say(text: str or GeneratorType or list):
+    """Says *text* or each `str` in it in the current IRC context."""
+    if type(text) is str:
+        hexchat.command("say " + text)
     else:
-        for item in it:
+        for item in text:
             say(item)
 
 
@@ -129,42 +129,92 @@ def require_args(num: int, exact: bool=False):
 
 @require_args(2)
 def set_(word, word_eol):
-    """ Changes a certain property in `config` or creates it if it does not exist. Writes changes immediately. """
+    """Changes a certain property in the config or creates it if it does not exist. Writes changes immediately."""
     key = word[1].lower()
     value = word_eol[2]
     config[key] = value
-    write_config(config_path, config)
-    print("Config item %s set to \"%s\"" % (key, value))
+    write_config()
+    print("Config item %s set to \"%s\"." % (key, value))
+
+
+@require_args(1)
+def remove(word, word_eol):
+    """Removes a certain property from the config. Writes changes immediately."""
+    key = word[1].lower()
+    try:
+        del config[key]
+        write_config()
+        print("Config item %s removed." % key)
+    except KeyError:
+        print("Config property %s does not seem to exist. Use set command to create it. " % key)
+
+
+@require_args(1)
+def read(word, word_eol):
+    """Prints the value of the specified config property."""
+    key = word[1].lower()
+    try:
+        print("Value of config property %s is %s." % (key, config[key]))
+    except KeyError:
+        print("Config property %s does not seem to exist. Use set command to create it. " % key)
 
 
 def help_(word, word_eol):
-    """ Prints out all available `commands`. """
-    print(postfix("Available commands are: ", commands))
-    print(postfix("Available facts are: ", facts))
+    """Prints out all available commands."""
+    if len(word) == 1:
+        print(postfix("Available commands are: ", commands))
+        print(postfix("Available facts are: ", facts))
+        print("For more information about any command / fact, type \"\035%shelp <command/fact>\035\"." % config["cmd_char"])
+    elif len(word) == 2:
+        key = word[1]
+        try:
+            print("\002{0}:\002 {1}".format(key, commands[key].__doc__))
+        except KeyError:
+            try:
+                print("\002Fact:\002 " + facts[key])
+            except KeyError:
+                print(key + " seems to be neither a command nor a fact.")
+
+
+def test(word, word_eol):
+    """Tests all facts and commands."""
+    say("{0}help".format(config["cmd_char"]))
+
+    for fact in facts.keys():
+        say("{0}{1}".format(config["cmd_char"], fact))
+        say("{0}{1} {2} {3}".format(config["cmd_char"], fact, "arg1", "arg2"))
+
+    say("{0}set test_key test_value".format(config["cmd_char"]))
+    say("{0}read test_key".format(config["cmd_char"]))
+    say("{0}remove test_key".format(config["cmd_char"]))
 
 
 commands = {
     "set": set_,
-    "help": help_
+    "remove": remove,
+    "read": read,
+    "help": help_,
+    "test": test
 }
-""" :var: Assigns to each command their function. """
+""":var: Assigns to each command their function."""
 
 facts = {
-    "start": "Hi there! Just to confirm, do you see a blue emergency oxygen depletion timer counting down near the upper right corner of your screen?",
-    "startcr": "If you haven't already, please exit to the main menu. There may be a timer which you have to wait for, this is normal.",
+    "start": "Good day! Just to confirm, do you see a blue emergency oxygen depletion timer counting down near the upper right corner of your screen? If you should require repairs rather than fuel or something else entirely, please tell me so now as well.",
+    "startcr": "If you haven't already, please exit to the main menu. There may be a logout timer which you have to wait for, this is normal.",
+    "nologin": "Thank you. From this point on please stay logged out to the main menu until I give you \035directly\035 the command \"\002\003GO GO GO\003\002\"",
+    "crgo": "\002\003GO GO GO!\003\002 Log into \002open play\002, light your \002wing beacon\002 and finally invite all your rats to a \002wing\002. Then monitor this channel in case of further instructions.",
     "wing": "Thank you. Next please invite your rat(s) to a wing.",
-    "beacon": "Thanks. Now please light your wing beacon so that our rats can find you.",
-    "tips": "Glad we could help you today. You can power your modules back up now. If you'll just stick with your rats in game for a bit, they have some advice which might interest you.",
-    "tips-db": "Glad we could help you today. You can power your modules back up now. If you could type \"/join #debrief\", someone will give you some tips in there which may interest you.",
-    "db-channel": "Please type \"/join #debrief\". Someone will give you tips on fuel management there.",
-    "enroute": "Thank you, your rats are making their way to you now. Sit back, relax and tell me immediately if that timer should show up.",
+    "beacon": "Now please light your wing beacon so that our rat(s) can find you.",
+    "tips": "Glad we could help you today. You can power your modules back up now. If you'll just stick with your rat(s) in game for a bit, they have some advice which might interest you.",
+    "tips-db": "Glad we could help you today. You can power your modules back up now. If you could type \"\035/join #debrief\035\", someone will give you some tips in there which may interest you.",
+    "db-channel": "Please type \"\035/join #debrief\035\". Someone will give you tips on fuel management there.",
+    "enroute": "Thank you, your rat(s) are making their way to you now. Sit back, relax and tell me immediately if that timer should show up.",
     "long": "Since your rat(s) are still a ways out, please log out to the main menu for now. I will ask you to log back in when they are closer.",
-    "need-fuel": "Hi there! Do you require fuel?",
-    "join": "If you'd like to look into joining the FuelRats, type \"/join #ratchat\". We'll get you started there.",
+    "join": "If you'd like to look into joining the FuelRats, type \"\035/join #ratchat\035\". We'll get you started there.",
     "shrug": "¯\_(ツ)_/¯",
     "lenny": "( ͡° ͜ʖ ͡° )"
 }
-""" :var: Like Mecha facts. See `say_fact` docstring """
+""":var: Like Mecha facts. See `say_fact` docstring."""
 
 
 # Initialization
@@ -203,9 +253,9 @@ def init():
               .format(__module_name__, config["cmd_char"]))
 
 
-# Hook functions
+# Hook function
 
-def on_send(word, word_eol, userdata):
+def on_send(word, word_eol, userdata=None):
     """
     Hook function, called upon all commands / messages the user sends.
     If the message is a script command or fact, parse it and call the corresponding function.
