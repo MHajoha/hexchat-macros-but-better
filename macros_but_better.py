@@ -18,7 +18,7 @@ from functools import wraps
 import hexchat
 
 __module_name__ = "Macros but better"
-__module_version__ = "2.1"
+__module_version__ = "2.2"
 __module_description__ = "Adds customizable commands for use when dispatching"
 
 DEFAULT_CONFIG = {
@@ -178,6 +178,10 @@ def help_(word, word_eol):
 
 def test(word, word_eol):
     """Tests all facts and commands."""
+    if hexchat.get_info("modes") is not None:
+        print("Probably a bad idea to do this in a channel mate.")
+        return
+
     say("{0}help".format(config["cmd_char"]))
 
     for fact in facts.keys():
@@ -199,7 +203,7 @@ commands = {
 """:var: Assigns to each command their function."""
 
 facts = {
-    "start": "Good day! Just to confirm, do you see a blue emergency oxygen depletion timer counting down near the upper right corner of your screen? If you should require repairs rather than fuel or something else entirely, please tell me so now as well.",
+    "start": "Hello and welcome to the Fuel Rats! Do you currently see a blue emergency oxygen depletion timer counting down near the upper right corner of your screen?",
     "startcr": "If you haven't already, please exit to the main menu. There may be a logout timer which you have to wait for, this is normal.",
     "nologin": "Thank you. From this point on please stay logged out to the main menu until I give you \035directly\035 the command \"\002\003GO GO GO\003\002\"",
     "crgo": "\002\003GO GO GO!\003\002 Log into \002open play\002, light your \002wing beacon\002 and finally invite all your rats to a \002wing\002. Then monitor this channel in case of further instructions.",
@@ -210,6 +214,7 @@ facts = {
     "db-channel": "Please type \"\035/join #debrief\035\". Someone will give you tips on fuel management there.",
     "enroute": "Thank you, your rat(s) are making their way to you now. Sit back, relax and tell me immediately if that timer should show up.",
     "long": "Since your rat(s) are still a ways out, please log out to the main menu for now. I will ask you to log back in when they are closer.",
+    "queue": "It appears that no rats are available on your platform at the moment. Until I can find you one, please log out to the main menu to conserve fuel.",
     "join": "If you'd like to look into joining the FuelRats, type \"\035/join #ratchat\035\". We'll get you started there.",
     "shrug": "¯\_(ツ)_/¯",
     "lenny": "( ͡° ͜ʖ ͡° )"
