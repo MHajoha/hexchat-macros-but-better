@@ -19,7 +19,7 @@ from functools import wraps
 import hexchat
 
 __module_name__ = "Macros but better"
-__module_version__ = "2.3"
+__module_version__ = "2.3.1"
 __module_description__ = "Adds customizable commands for use when dispatching"
 
 DEFAULT_CONFIG = {
@@ -67,7 +67,7 @@ def write_config(path: str = None, data: dict = None):
     if data is None:
         data = config
 
-    with open(path, "w" if os.path.isfile(path) else "x") as f:
+    with open(os.path.expanduser(path), "w") as f:
         for key, value in data.items():
             f.write(key + " = " + value + "\n")
 
