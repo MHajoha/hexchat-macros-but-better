@@ -19,7 +19,7 @@ from functools import wraps
 import hexchat
 
 __module_name__ = "Macros but better"
-__module_version__ = "2.3.1"
+__module_version__ = "2.3.2"
 __module_description__ = "Adds customizable commands for use when dispatching"
 
 DEFAULT_CONFIG = {
@@ -253,7 +253,7 @@ def init():
     if platform.system() == "Windows":
         config_path = os.path.join(os.getenv("APPDATA"), r"HexChat\mbb.conf")
     elif platform.system() == "Linux":
-        config_path = r"~/.config/hexchat/mbb.conf"
+        config_path = os.path.expanduser(r"~/.config/hexchat/mbb.conf")
     else:
         print("Your OS %s does not seem to be supported.\nMacros but better not loaded." % platform.system())
         exit(1)
