@@ -222,11 +222,7 @@ facts = {
     "crgo": "\002\003GO GO GO!\003\002 Log into \002open play\002, light your \002wing beacon\002 and finally invite all your rats to a \002wing\002. Then monitor this channel in case of further instructions.",
     "wing": "Thank you. Next please invite your rat(s) to a wing.",
     "beacon": "Now please light your wing beacon so that our rat(s) can find you.",
-    "tips": [
-        "Glad we could help you today. You can power your modules back up now. If you'll just stick with your rat(s) in game for a bit, they have some advice which might interest you.",
-        "\002Happy Squeakmas!\002 The fuel rats are currently collaborating with Frontier on \035Squeakmas\035 to collect money for Special Effect, who help disabled people to use technology, including video games. This is, of course, completely optional, however if you would like to contribute, please visit https://www.justgiving.com/fundraising/frontier-developments"
-        if datetime.utcnow() < datetime(2017, 12, 12, 12) else ""
-    ],
+    "tips": "Glad we could help you today. You can power your modules back up now. If you'll just stick with your rat(s) in game for a bit, they have some advice which might interest you.",
     "tips-db": "Glad we could help you today. You can power your modules back up now. If you could type \"\035/join #debrief\035\", someone will give you some tips in there which may interest you.",
     "db-channel": "Please type \"\035/join #debrief\035\". Someone will give you tips on fuel management there.",
     "enroute": "Thank you, your rat(s) are making their way to you now. Sit back, relax and tell me immediately if that timer should show up.",
